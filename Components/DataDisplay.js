@@ -8,13 +8,22 @@ import {
   ScrollView,
   RefreshControl,
   Button,
+  TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import stylesheet from './Styles';
 const dStyles = stylesheet.styles;
+//reading api's keys
 const data_api_key = '';
 const target_api_key = '';
+//reading data url's
 const data_directory_URL = '';
 const target_directory_URL = '';
+
+//for sending up target data
+const api_key = '';
+const directory_URL = '';
+
 export default class DataDisplay extends Component{
 
   state = {
@@ -23,8 +32,228 @@ export default class DataDisplay extends Component{
     currentTemp: 0.00,
     freshnessLevel: 0,
     refreshing: false,
+    targetTemp:'?',
+    temp: '00.0',
+    jets: '0',
+    light:'0' ,
+    coldBlower:'0',
+    hotBlower:'0',
+    firstRun:true,
+    editTargetTemp:false,
+    dirtyData:false,
   };
+  //updates state's varibles that are used the buttons
+  updateInnerInformation(){
+      if(this.state.thingData){
+        if(this.state.thingData.length !== 0){ 
+          this.setState({
+            firstRun:false,
+            jets: this.state.thingData['feeds'][1]['field3'],
+            light: this.state.thingData['feeds'][1]['field4'],
+            coldBlower: this.state.thingData['feeds'][1]['field5'],
+            hotBlower: this.state.thingData['feeds'][1]['field6'],
+          });
 
+        }
+        if(this.state.targetData){
+          if(this.state.targetData.length !== 0)
+          this.setState({targetTemp:(Math.round(100*this.state.targetData['feeds'][1]['field1'])/100).toString()});
+        }
+      }
+  }
+  componentDidMount(){
+    this.timer = setInterval(() => this.compileOnInterval(), 30000);//sets up a interval that will push the information every 30secs
+    this.getThingData();
+  }
+  componentWillUnmount(){
+    clearInterval(this.timer);
+  }
+
+  //The following functions are used in controling the data that will be sent up to
+  //thing speak
+
+  //sets condition true so the target temp can be updated
+  editTargetTempState(){
+    this.setState({editTargetTemp:true});
+  }
+  //return a text component when not editing target temp 
+  makeTargetTempEditable(){
+    console.log(this.state.editTargetTemp);
+    if(this.state.editTargetTemp === false){
+      return(
+      <Text style={dStyles.tempInput}>{this.state.targetTemp}</Text>
+      );
+    }else if(this.state.editTargetTemp === true){
+      //TODO:Set editTargetTemp to false once user/system submits the data
+      return(        
+      <TextInput
+        style={dStyles.tempInput}
+        editable={true}
+        maxLength={5}
+        autoFocus={true}
+        keyboardType={'numeric'}
+        onChangeText={(text) => this.setState({targetTemp:text, dirtyFlag:false})}
+        value={this.state.targetTemp}
+        />)
+        ;
+    }
+  }
+  changeJetsState(){
+    if(this.state.jets === '0'){
+      this.setState({jets:'1', dirtyFlag:false});
+    }else{
+      this.setState({jets:'0', dirtyFlag:false});
+    }
+  }
+  changelightsState(){
+    if(this.state.light === '0'){
+      this.setState({light:'1', dirtyFlag:false});
+    }else{
+      this.setState({light:'0', dirtyFlag:false});
+    }
+  }
+  changeColdBlowerState(){
+    if(this.state.coldBlower === '0'){
+      this.setState({coldBlower:'1', dirtyFlag:false});
+    }else{
+      this.setState({coldBlower:'0', dirtyFlag:false});
+    }
+  }
+  changeHotBlowerState(){
+    if(this.state.hotBlower === '0'){
+      this.setState({hotBlower:'1', dirtyFlag:false});
+    }else{
+      this.setState({hotBlower:'0', dirtyFlag:false});
+    }
+  }
+  //this area handles uploading the control information
+compileInfo(){
+  var theInformation =
+  directory_URL + api_key +
+  '&field1='+this.state.temp+
+  '&field2='+this.state.jets+
+  '&field3='+this.state.light+
+  '&field4='+this.state.coldBlower+
+  '&field5='+this.state.hotBlower;
+  console.log(theInformation);
+  this.updateThingData(theInformation);
+
+}//end of compileInfo func
+async compileOnInterval(){
+ if(this.state.dirtyData === true){ 
+  var theInformation =
+  directory_URL + api_key +
+  '&field1='+this.state.temp+
+  '&field2='+this.state.jets+
+  '&field3='+this.state.light+
+  '&field4='+this.state.coldBlower+
+  '&field5='+this.state.hotBlower;
+  console.log('complie on interval called');
+  this.updateThingData(theInformation);
+ }else{
+   console.log('interval called');
+ }
+}
+
+updateThingData(compliedInfo){
+  var url = compliedInfo
+  fetch(url,{
+    method: 'GET',
+    headers: {
+   Accept: 'application/json',
+   'Content-Type': 'application/json',
+},
+  })
+  .then((response) => console.log(response.json()))
+  .catch((error) => {
+    console.error(error);
+  });
+  this.setState({dirtyData: false});
+}//end of updateThingData Func
+//end of updating the channels
+
+
+
+displayFields(){
+  var jets = 'OFF';
+  var light = 'OFF';
+  var coldBlower= 'OFF';
+  var hotBlower = 'OFF';
+  var targetTemp = '?';
+  var heater = 'OFF';
+  //check to see whats on
+      if(this.state.jets === '1'){
+        jets = 'ON';
+      }else {
+        jets = 'OFF';
+      }
+      if(this.state.light === '1'){
+        light = 'ON';
+      }else {
+        light = 'OFF';
+      }
+      if(this.state.coldBlower === '1'){
+        coldBlower ='ON';
+      }else{
+        coldBlower = 'OFF';
+      }
+      if(this.state.hotBlower === '1'){
+        hotBlower ='ON';
+      }else{
+        hotBlower = 'OFF';
+      }
+
+//end of configuring what is on and off
+  return(
+    <View style={dStyles.controlComplex}>
+      <View style={dStyles.switchFields}>
+        
+        <View style={dStyles.fieldContainer}>
+            <View style={dStyles.fieldContainer}>
+              <Text style={stylesheet.styles.baseText}>Heater </Text>
+              <Text style={stylesheet.styles.fieldText}>{heater} </Text>
+            </View>
+        </View>
+        <TouchableOpacity style={dStyles.fieldContainer} onPress={this.editTargetTempState.bind(this)}>
+          <View style={dStyles.fieldContainer}>
+          <Text style={stylesheet.styles.baseText}>Target Temp:</Text>
+          {this.makeTargetTempEditable()}
+          
+          </View>
+          </TouchableOpacity>
+
+        <TouchableOpacity style={dStyles.fieldContainer} onPress={this.changeJetsState.bind(this)}>
+        <View style={dStyles.fieldContainer}>
+          <Text style={stylesheet.styles.baseText}>Jets</Text>
+          <Text style={dStyles.switchButton}>{jets}</Text>
+        </View>
+        </TouchableOpacity>
+      </View>
+    <View style={dStyles.switchFields}>
+    <TouchableOpacity style={stylesheet.styles.fieldContainer} onPress = {this.changelightsState.bind(this)}>
+    <View style={dStyles.fieldContainer} >
+      <Text style={stylesheet.styles.baseText}>Lights</Text>
+      <Text style={dStyles.switchButton}>{light}</Text>
+    </View>
+    </TouchableOpacity>
+    <TouchableOpacity style={stylesheet.styles.fieldContainer}  onPress = {this.changeColdBlowerState.bind(this)}>
+    <View style={dStyles.fieldContainer} >
+      <Text style={stylesheet.styles.baseText}>Cold Blower</Text>
+      <Text style={dStyles.switchButton}>{coldBlower}</Text>
+    </View>
+    </TouchableOpacity>
+    <TouchableOpacity style={stylesheet.styles.fieldContainer} onPress={this.changeHotBlowerState.bind(this)}>
+    <View style={dStyles.fieldContainer} >
+      <Text style={stylesheet.styles.baseText}>Hot Blower</Text>
+      <Text style={dStyles.switchButton}>{hotBlower}</Text>
+      </View>
+      </TouchableOpacity>
+    </View>
+    </View>
+  );
+}//end of displayFields func
+
+  //end of control functions
   showFreshness(){
   //returns a text compontent depending on how old the reading is from
   //the current time given by the device.
@@ -105,25 +334,6 @@ export default class DataDisplay extends Component{
     }
   }//end of showFreshness func
 
-  componentDidMount(){
-    this.getThingData();
-  }
-
-  getTargetData(){
-    fetch('',{
-      method: 'GET',
-      headers:{
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-    })
-    .then((response) => response.json())
-    .then((responseJson) => this.setState({targetData: responseJson}))
-    .catch((error) => {
-      console.error(error);
-    }).done();
-  }
-
   getThingData() {
     fetch(data_directory_URL + data_api_key +'&results=2',{
       method: 'GET',
@@ -137,6 +347,7 @@ export default class DataDisplay extends Component{
     .catch((error) => {
       console.error(error);
     }).done();
+    //fetch for target data
     fetch(target_directory_URL + target_api_key + '&results=2',{
       method: 'GET',
       headers:{
@@ -149,7 +360,9 @@ export default class DataDisplay extends Component{
     .catch((error) => {
       console.error(error);
     }).done();
-
+    if(this.state.firstRun === true){
+      this.updateInnerInformation();
+    }
   }
   
  displayGraph(){
@@ -184,6 +397,24 @@ _onRefreash = () => {
     console.error(error);
   }).done();
 
+  //get target information
+  fetch(target_directory_URL + target_api_key + '&results=2',{
+    method: 'GET',
+    headers:{
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+  })
+  .then((response) => response.json())
+  .then((responseJson) => this.setState({targetData: responseJson}))
+  .catch((error) => {
+    console.error(error);
+  }).done();
+
+  //update inner information
+  this.updateInnerInformation();
+
+
 }
 
 getTimeStamp(){
@@ -203,74 +434,6 @@ getTimeStamp(){
   }
 }//end of getTimeStamp func
 
-displayFields(){
-  var targetTemp = '?';
-  var heater = 'OFF';
-  var jets = 'OFF';
-  var light = 'OFF';
-  var coldBlower= 'OFF';
-  var hotBlower = 'OFF';
-  //check to see whats on
-  if(this.state.thingData){
-    console.log(this.state.thingData);
-    if(this.state.thingData.length !== 0){
-      if(this.state.thingData['feeds'][1]['field3'] === '1'){
-        jets = 'ON';
-      }
-      if(this.state.thingData['feeds'][1]['field4'] === '1'){
-        light = 'ON';
-      }
-      if(this.state.thingData['feeds'][1]['field2'] === '1'){
-        heater = 'ON';
-      }
-      if(this.state.thingData['feeds'][1]['field5'] === '1'){
-        coldBlower ='ON';
-      }
-      if(this.state.thingData['feeds'][1]['field6'] === '1'){
-        hotBlower ='ON';
-      }
-    }
-    if(this.state.targetData){
-      if(this.state.targetData.length !== 0){
-      targetTemp = (Math.round(100*this.state.targetData['feeds'][1]['field1'])/100).toString()
-      }
-    }
-  }//end of configuring what is on and off
-
-
-  return(
-    <View style={dStyles.controlComplex}>
-      <View style={stylesheet.styles.switchFields}>
-        <View style={dStyles.fieldContainer}>
-          <Text style={stylesheet.styles.fieldText}>Heater </Text>
-          <Text style={stylesheet.styles.fieldText}>{heater} </Text>
-        </View>
-        <View style={dStyles.fieldContainer}>
-          <Text style={stylesheet.styles.fieldText}>Target Tempature: {targetTemp} </Text>
-        </View>
-        <View style={stylesheet.styles.fieldContainer}>
-          <Text style={stylesheet.styles.fieldText}>Hot Blower </Text>
-          <Text style={stylesheet.styles.fieldText}>{hotBlower}</Text>
-        </View>
-      </View>
-      <View style={stylesheet.styles.switchFields}>
-      <View style={dStyles.fieldContainer}>
-          <Text style={stylesheet.styles.fieldText}>Jets </Text>
-          <Text style={stylesheet.styles.fieldText}>{jets} </Text>
-        </View>
-        <View style={dStyles.fieldContainer}>
-          <Text style={stylesheet.styles.fieldText}>Lights </Text>
-          <Text style={stylesheet.styles.fieldText}>{light} </Text>
-        </View>
-        <View style={dStyles.fieldContainer}>
-          <Text style={stylesheet.styles.fieldText}>Cold Blower </Text>
-          <Text style={stylesheet.styles.fieldText}>{coldBlower}</Text>
-        </View>
-      </View>
-    </View>
-  );
-}//end of displayFields func
-
   render(){
     console.log(this.state.thingData);
     return(
@@ -285,21 +448,13 @@ displayFields(){
           />
         }>
           <View style={{alignItems:'center', marginBottom:5,}}>
-          <Text style={stylesheet.styles.baseText}>Hot Tub Skipper</Text>
+          <Text style={stylesheet.styles.baseText}>Hot Tub Controller</Text>
           <Text style={stylesheet.styles.tempText}>{this.displayCurrentTemp()} F</Text>
           <Text style={stylesheet.styles.baseText}>{this.getTimeStamp()}</Text>
           {this.showFreshness()}
           </View>
           {this.displayGraph()}
           {this.displayFields()}
-          <View style={{borderRadius:3, borderWidth:2, borderColor:'white',marginTop:50}}>
-          <Button
-            onPress={() => {
-              this.props.navigation.navigate('Control', {thingData: this.state.thingData, targetData: this.state.targetData});
-              }}
-            title="Control Page"
-          />
-          </View>
         </ScrollView>
 
       </View>

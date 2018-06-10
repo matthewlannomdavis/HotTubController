@@ -14,7 +14,6 @@ import {
 import { StackNavigator, } from 'react-navigation';
 import stylesheet from './Components/Styles';
 import DataDisplay from './Components/DataDisplay';
-import ControlDisplay from './Components/ControlDisplay';
 
 const instructions = Platform.select({
   ios: 'Press Cmd+R to reload,\n' +
@@ -24,16 +23,13 @@ const instructions = Platform.select({
 });
 const BaseNavigation = StackNavigator({
   Data:{screen:DataDisplay},
-  Control:{screen:ControlDisplay},
 }, { headerMode: 'none', });
 type Props = {};
 export default class App extends Component<Props> {
   render() {
     return (
       <View style={styles.container}>
-        <BaseNavigation
-          initialRouteName={{ name: 'Data' }}
-        />
+        <DataDisplay />
       </View>
     );
   }

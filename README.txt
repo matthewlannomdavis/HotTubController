@@ -6,9 +6,8 @@ of a hot tub and allow it to be controlled
 remotely from ones phone. 
 ------Setting things up for the application----
     -------Key Items needed in directory-----
-    Two Directories must exist one holding the 
-    current information about the hot tub, and
-    a second one to hold the desired settings
+   Requires two channels on ThingSpeak one to hold the current state of the Hot Tub,
+   and the other to hold the target.
 
     Data directory must contain 6 fields in this order
     1:Tempeture-----numeric value
@@ -18,5 +17,6 @@ remotely from ones phone.
     5:Cold Blower ---- 0/1
     6:Hot Blower ----- 0/1 
 
-    Target Data 
+    Target Data:
+    TODO: Fill this in....
 
